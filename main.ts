@@ -8,7 +8,8 @@ import {
 } from "https://deno.land/std@0.224.0/encoding/base64.ts";
 
 // If modifying these scopes, delete token.json.
-const SCOPES = ['https://www.googleapis.com/auth/gmail.readonly'];
+// const SCOPES = ['https://www.googleapis.com/auth/gmail.readonly'];
+const SCOPES = ['https://www.googleapis.com/auth/gmail.modify'];
 // The file token.json stores the user's access and refresh tokens, and is
 // created automatically when the authorization flow completes for the first
 // time.
@@ -156,11 +157,54 @@ async function getMessages(auth: OAuth2Client | null, labelIds: string[] = []) {
   });
 }
 
+async function deleteMessages(auth: OAuth2Client | null, labelIds: string[] = []) {
+  if (!auth) {
+    throw new Error('No credentials');
+  }
+  const gmail = google.gmail({version: 'v1', auth});
+
+  const res = await gmail.users.messages.list({
+    userId: 'me',
+    maxResults: 1,
+    labelIds
+  });
+  const messages = res.data.messages;
+  if (!messages || messages.length === 0) {
+    console.log('No messages found');
+    return;
+  }
+  messages.forEach((message) => {
+    gmail.users.messages.get({
+      userId: 'me',
+      id: message.id
+    }).then((res) => {
+      const { headers } = res.data.payload;
+      const subjectHeader = headers.find((header) => header.name === 'Subject');
+      const fromHeader = headers.find((header) => header.name === 'From');
+      const subjectValue = subjectHeader ? subjectHeader.value : '';
+      const fromValue = fromHeader ? fromHeader.value : '';
+      gmail.users.messages.trash({
+        userId: 'me',
+        id: message.id
+      })
+        .then(() => {
+          console.log(`Deleted: ${subjectValue} from ${fromValue}`);
+        })
+        .catch((err) => {
+          console.error(err);
+        });
+    })
+  });
+}
+
 // authorize().then(listLabels).catch(console.error);
 // authorize().then(listMessages).catch(console.error);
 // authorize().then((auth) => {
 //   listMessages(auth, ['CATEGORY_PROMOTIONS']);
 // }).catch(console.error);
+// authorize().then((auth) => {
+//   getMessages(auth, ['CATEGORY_PROMOTIONS']);
+// }).catch(console.error)
 authorize().then((auth) => {
-  getMessages(auth, ['CATEGORY_PROMOTIONS']);
+  deleteMessages(auth, ['CATEGORY_PROMOTIONS']);
 }).catch(console.error);
