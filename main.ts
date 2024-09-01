@@ -110,8 +110,41 @@ async function listMessages(auth: OAuth2Client | null, labelIds: string[] = []) 
   });
 }
 
+async function getMessages(auth: OAuth2Client | null, labelIds: string[] = []) {
+  if (!auth) {
+    throw new Error('No credentials');
+  }
+  const gmail = google.gmail({version: 'v1', auth});
+
+  const res = await gmail.users.messages.list({
+    userId: 'me',
+    maxResults: 10,
+    labelIds
+  });
+  const messages = res.data.messages;
+  if (!messages || messages.length === 0) {
+    console.log('No messages found');
+    return;
+  }
+  messages.forEach((message) => {
+    gmail.users.messages.get({
+      userId: 'me',
+      id: message.id
+    })
+      .then((res) => {
+        console.log(res.data);
+      })
+      .catch((err) => {
+        console.error(err);
+      });
+  });
+}
+
 // authorize().then(listLabels).catch(console.error);
-authorize().then(listMessages).catch(console.error);
+// authorize().then(listMessages).catch(console.error);
+// authorize().then((auth) => {
+//   listMessages(auth, ['CATEGORY_PROMOTIONS']);
+// }).catch(console.error);
 authorize().then((auth) => {
-  listMessages(auth, ['CATEGORY_PROMOTIONS']);
+  getMessages(auth, ['CATEGORY_PROMOTIONS']);
 }).catch(console.error);
