@@ -88,4 +88,25 @@ async function listLabels(auth: OAuth2Client | null) {
   });
 }
 
-authorize().then(listLabels).catch(console.error);
+async function listMessages(auth: OAuth2Client | null) {
+  if (!auth) {
+    throw new Error('No credentials');
+  }
+  const gmail = google.gmail({version: 'v1', auth});
+  const res = await gmail.users.messages.list({
+    userId: 'me',
+  });
+  const messages = res.data.messages;
+  if (!messages || messages.length === 0) {
+    console.log('No messages found');
+    return;
+  }
+  console.log('Messages:');
+  messages.forEach((message) => {
+    // console.log(`- ${message.id}`);
+    console.log(message);
+  });
+}
+
+// authorize().then(listLabels).catch(console.error);
+authorize().then(listMessages).catch(console.error);
