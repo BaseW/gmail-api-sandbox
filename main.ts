@@ -2,6 +2,10 @@
 import {authenticate} from 'npm:@google-cloud/local-auth';
 import { google } from 'npm:googleapis';
 import { OAuth2Client } from 'npm:google-auth-library';
+import {
+  // encodeBase64,
+  decodeBase64,
+} from "https://deno.land/std@0.224.0/encoding/base64.ts";
 
 // If modifying these scopes, delete token.json.
 const SCOPES = ['https://www.googleapis.com/auth/gmail.readonly'];
@@ -118,7 +122,7 @@ async function getMessages(auth: OAuth2Client | null, labelIds: string[] = []) {
 
   const res = await gmail.users.messages.list({
     userId: 'me',
-    maxResults: 10,
+    maxResults: 1,
     labelIds
   });
   const messages = res.data.messages;
@@ -132,7 +136,19 @@ async function getMessages(auth: OAuth2Client | null, labelIds: string[] = []) {
       id: message.id
     })
       .then((res) => {
-        console.log(res.data);
+        const { headers } = res.data.payload;
+        // const { headers, body } = res.data.payload;
+        // console.log('headers:', headers);
+        const subjectHeader = headers.find((header) => header.name === 'Subject');
+        const fromHeader = headers.find((header) => header.name === 'From');
+        const subjectValue = subjectHeader ? subjectHeader.value : '';
+        const fromValue = fromHeader ? fromHeader.value : '';
+        console.log(subjectValue);
+        console.log(fromValue);
+        // const bodyData = body.data || '';
+        // console.log(bodyData);
+        // const bodyDecoded = bodyData ? decodeBase64(bodyData) : '';
+        // console.log(bodyDecoded);
       })
       .catch((err) => {
         console.error(err);
