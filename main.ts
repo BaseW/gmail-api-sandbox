@@ -1,7 +1,7 @@
 // https://developers.google.com/gmail/api/quickstart/nodejs?hl=ja
-import {authenticate} from 'npm:@google-cloud/local-auth';
-import { google } from 'npm:googleapis';
-import { OAuth2Client } from 'npm:google-auth-library';
+import { authenticate } from "npm:@google-cloud/local-auth";
+import { google } from "npm:googleapis";
+import { OAuth2Client } from "npm:google-auth-library";
 // import {
 //   encodeBase64,
 //   decodeBase64,
@@ -10,12 +10,12 @@ import { OAuth2Client } from 'npm:google-auth-library';
 // If modifying these scopes, delete token.json.
 // const SCOPES = ['https://www.googleapis.com/auth/gmail.readonly']; // for read only
 // const SCOPES = ['https://www.googleapis.com/auth/gmail.modify']; // for read and write
-const SCOPES = ['https://mail.google.com/']; // for batch delete
+const SCOPES = ["https://mail.google.com/"]; // for batch delete
 // The file token.json stores the user's access and refresh tokens, and is
 // created automatically when the authorization flow completes for the first
 // time.
-const TOKEN_PATH = './token.json';
-const CREDENTIALS_PATH = './credentials.json';
+const TOKEN_PATH = "./token.json";
+const CREDENTIALS_PATH = "./credentials.json";
 
 /**
  * Reads previously authorized credentials from the save file.
@@ -43,7 +43,7 @@ async function saveCredentials(client: OAuth2Client) {
   const keys = JSON.parse(content);
   const key = keys.installed || keys.web;
   const payload = JSON.stringify({
-    type: 'authorized_user',
+    type: "authorized_user",
     client_id: key.client_id,
     client_secret: key.client_secret,
     refresh_token: client.credentials.refresh_token,
@@ -53,7 +53,6 @@ async function saveCredentials(client: OAuth2Client) {
 
 /**
  * Load or request or authorization to call APIs.
- *
  */
 async function authorize() {
   let client = await loadSavedCredentialsIfExist();
@@ -77,39 +76,42 @@ async function authorize() {
  */
 async function listLabels(auth: OAuth2Client | null) {
   if (!auth) {
-    throw new Error('No credentials');
+    throw new Error("No credentials");
   }
-  const gmail = google.gmail({version: 'v1', auth});
+  const gmail = google.gmail({ version: "v1", auth });
   const res = await gmail.users.labels.list({
-    userId: 'me',
+    userId: "me",
   });
   const labels = res.data.labels;
   if (!labels || labels.length === 0) {
-    console.log('No labels found.');
+    console.log("No labels found.");
     return;
   }
-  console.log('Labels:');
+  console.log("Labels:");
   labels.forEach((label) => {
     console.log(`- ${label.name}`);
   });
 }
 
-async function listMessages(auth: OAuth2Client | null, labelIds: string[] = []) {
+async function listMessages(
+  auth: OAuth2Client | null,
+  labelIds: string[] = [],
+) {
   if (!auth) {
-    throw new Error('No credentials');
+    throw new Error("No credentials");
   }
-  const gmail = google.gmail({version: 'v1', auth});
+  const gmail = google.gmail({ version: "v1", auth });
   const res = await gmail.users.messages.list({
-    userId: 'me',
+    userId: "me",
     maxResults: 10,
-    labelIds
+    labelIds,
   });
   const messages = res.data.messages;
   if (!messages || messages.length === 0) {
-    console.log('No messages found');
+    console.log("No messages found");
     return;
   }
-  console.log('Messages:');
+  console.log("Messages:");
   messages.forEach((message) => {
     // console.log(`- ${message.id}`);
     console.log(message);
@@ -118,33 +120,35 @@ async function listMessages(auth: OAuth2Client | null, labelIds: string[] = []) 
 
 async function getMessages(auth: OAuth2Client | null, labelIds: string[] = []) {
   if (!auth) {
-    throw new Error('No credentials');
+    throw new Error("No credentials");
   }
-  const gmail = google.gmail({version: 'v1', auth});
+  const gmail = google.gmail({ version: "v1", auth });
 
   const res = await gmail.users.messages.list({
-    userId: 'me',
+    userId: "me",
     maxResults: 1,
-    labelIds
+    labelIds,
   });
   const messages = res.data.messages;
   if (!messages || messages.length === 0) {
-    console.log('No messages found');
+    console.log("No messages found");
     return;
   }
   messages.forEach((message) => {
     gmail.users.messages.get({
-      userId: 'me',
-      id: message.id
+      userId: "me",
+      id: message.id,
     })
       .then((res) => {
         const { headers } = res.data.payload;
         // const { headers, body } = res.data.payload;
         // console.log('headers:', headers);
-        const subjectHeader = headers.find((header) => header.name === 'Subject');
-        const fromHeader = headers.find((header) => header.name === 'From');
-        const subjectValue = subjectHeader ? subjectHeader.value : '';
-        const fromValue = fromHeader ? fromHeader.value : '';
+        const subjectHeader = headers.find((header) =>
+          header.name === "Subject"
+        );
+        const fromHeader = headers.find((header) => header.name === "From");
+        const subjectValue = subjectHeader ? subjectHeader.value : "";
+        const fromValue = fromHeader ? fromHeader.value : "";
         console.log(subjectValue);
         console.log(fromValue);
         // const bodyData = body.data || '';
@@ -158,28 +162,31 @@ async function getMessages(auth: OAuth2Client | null, labelIds: string[] = []) {
   });
 }
 
-async function deleteMessages(auth: OAuth2Client | null, labelIds: string[] = []) {
+async function deleteMessages(
+  auth: OAuth2Client | null,
+  labelIds: string[] = [],
+) {
   if (!auth) {
-    throw new Error('No credentials');
+    throw new Error("No credentials");
   }
-  const gmail = google.gmail({version: 'v1', auth});
+  const gmail = google.gmail({ version: "v1", auth });
 
   const res = await gmail.users.messages.list({
-    userId: 'me',
+    userId: "me",
     maxResults: 1000,
-    labelIds
+    labelIds,
   });
   const messages = res.data.messages;
   if (!messages || messages.length === 0) {
-    console.log('No messages found');
+    console.log("No messages found");
     return;
   }
   const messageIds = messages.map((message) => message.id);
   const batchDeleteRes = await gmail.users.messages.batchDelete({
-    userId: 'me',
+    userId: "me",
     requestBody: {
-      ids: messageIds
-    }
+      ids: messageIds,
+    },
   });
   console.log(batchDeleteRes);
 }
@@ -193,5 +200,5 @@ async function deleteMessages(auth: OAuth2Client | null, labelIds: string[] = []
 //   getMessages(auth, ['CATEGORY_PROMOTIONS']);
 // }).catch(console.error)
 authorize().then((auth) => {
-  deleteMessages(auth, ['CATEGORY_PROMOTIONS']);
+  deleteMessages(auth, ["CATEGORY_PROMOTIONS"]);
 }).catch(console.error);
